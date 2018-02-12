@@ -7,5 +7,5 @@ setup(name='python-btcmarkets',
       author='Joshua Barber',
       author_email='contact@jbarber.info',
       license='MIT',
-      packages=['python-btcmarkets'],
+      packages=['python_btcmarkets'],
       zip_safe=False)
