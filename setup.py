@@ -1,11 +1,11 @@
 from setuptools import setup
 
-setup(name='python-btcmarkets',
-      version='0.1',
+setup(name='btcmarketsapi',
+      version='0.9',
       description='Python3 Wrapper for the BTCMarkets APIs',
-      url='https://github.com/SigmaAdvancedAnalytics/python-btcmarkets',
+      url='https://github.com/SigmaAdvancedAnalytics/btcmarketsapi',
       author='Joshua Barber',
       author_email='contact@jbarber.info',
       license='MIT',
-      packages=['python_btcmarkets'],
+      packages=['btcmarketsapi'],
       zip_safe=False)
