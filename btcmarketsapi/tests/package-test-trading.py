@@ -26,11 +26,6 @@ response = client.account_balance()
 pp.pprint(response)
 
 
-# Market data
-print('=== Market Tick ==='*5)
-response2 = client.market_all_ticks(currency)
-pp.pprint(response2)
-
 # Order History
 print('=== Order History ==='*5)
 response = client.order_history(instrument,currency,limit,since_order)

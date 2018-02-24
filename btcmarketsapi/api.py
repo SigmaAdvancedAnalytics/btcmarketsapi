@@ -47,6 +47,13 @@ def post_request(key, secret, path, postData):
     signature = base64.b64encode(hmac.new(secret, stringToSign, digestmod=hashlib.sha512).digest())
     return request('post', key, signature, nowInMilisecond, path, postData)
 
+def convert_response(response_list, response_keys):
+    for element in response_list:
+        for key in response_keys:
+            conversion = {key:element[key]/CONVERSION}
+            element.update(conversion)
+    return response_list
+
 class Client:
 
     def __init__(self, key, secret):
@@ -74,9 +81,7 @@ class Client:
     # Account data - https://github.com/BTCMarkets/API/wiki/Account-API
     def account_balance(self):
         response = get_request(self.key, self.secret, '/account/balance')
-        for instrument in response:
-                conversion = {'balance':instrument['balance']/CONVERSION,'pendingFunds':instrument['pendingFunds']/CONVERSION}
-                instrument.update(conversion)
+        response = convert_response(response, ['balance', 'pendingFunds'])
         return response
 
     def account_trading_fee(self,instrument,currency):
@@ -87,24 +92,21 @@ class Client:
     
     # Order Data - https://github.com/BTCMarkets/API/wiki/Trading-API
     def trade_history(self, instrument, currency, limit, since):
-        data = OrderedDict([('currency', currency),('instrument', instrument),('limit', limit),('since', since)])
+        data = OrderedDict([('currency', currency.upper()),('instrument', instrument.upper()),('limit', limit),('since', since)])
         postData = json.dumps(data, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/trade/history', postData) 
         # Convert the price and volume for each trade to 'normal' amounts
-        if response['trades']:
-            for trade in response['trades']:
-                conversion = {'price':trade['price']/CONVERSION,'volume':trade['volume']/CONVERSION,'fee':trade['fee']/CONVERSION}
-                trade.update(conversion)
+        response['trades'] = convert_response(response['trades'], ['price', 'volume','fee'])
         return response
 
     def order_history(self, instrument, currency, limit, since):
-        data = OrderedDict([('currency', currency),('instrument', instrument),('limit', limit),('since', since)])
+        data = OrderedDict([('currency', currency.upper()),('instrument', instrument.upper()),('limit', limit),('since', since)])
         postData = json.dumps(data, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/history', postData) 
         return response
 
     def open_orders(self, instrument, currency, limit, since):
-        data = OrderedDict([('currency', currency),('instrument', instrument),('limit', limit),('since', since)])
+        data = OrderedDict([('currency', currency.upper()),('instrument', instrument.upper()),('limit', limit),('since', since)])
         postData = json.dumps(data, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/open', postData) 
         return response
