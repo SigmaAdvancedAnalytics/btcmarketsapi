@@ -9,7 +9,7 @@ instruments = ['BCH','BTC','LTC','ETH','XRP','ETC']
 #socket_url = 'https://socket.btcmarkets.net'
 
 # Trade values (price or volume) require this modifier - https://github.com/BTCMarkets/API/wiki/Trading-API
-TRADE_MODIFIER = 100000000 #e.g. Price of $130 = 13000000000, Volume of 1 BTC = 100000000
+CONVERSION = 100000000 #e.g. Price of $130 = 13000000000, Volume of 1 BTC = 100000000
 
 
 def request(action, key, signature, timestamp, path, data):
@@ -47,7 +47,6 @@ def post_request(key, secret, path, postData):
     signature = base64.b64encode(hmac.new(secret, stringToSign, digestmod=hashlib.sha512).digest())
     return request('post', key, signature, nowInMilisecond, path, postData)
 
-
 class Client:
 
     def __init__(self, key, secret):
@@ -62,7 +61,7 @@ class Client:
     def market_all_ticks(self,currency):
         response = []
         for instrument in instruments:
-            response.append(BTCMarkets.market_tick(self,instrument,currency))
+            response.append(Client.market_tick(self,instrument,currency))
         return response
 
     def market_orderbook(self,instrument,currency):
@@ -75,12 +74,15 @@ class Client:
     # Account data - https://github.com/BTCMarkets/API/wiki/Account-API
     def account_balance(self):
         response = get_request(self.key, self.secret, '/account/balance')
+        for instrument in response:
+                conversion = {'balance':instrument['balance']/CONVERSION,'pendingFunds':instrument['pendingFunds']/CONVERSION}
+                instrument.update(conversion)
         return response
 
     def account_trading_fee(self,instrument,currency):
         response = get_request(self.key, self.secret, '/account/{}/{}/tradingfee'.format(instrument.upper(),currency.upper()))
         if response:     
-            response = {'instrument':instrument,'currency':currency,'tradingFeeRate':response['tradingFeeRate']/TRADE_MODIFIER}
+            response = {'instrument':instrument,'currency':currency,'tradingFeeRate':response['tradingFeeRate']/CONVERSION}
         return response
     
     # Order Data - https://github.com/BTCMarkets/API/wiki/Trading-API
@@ -88,6 +90,11 @@ class Client:
         data = OrderedDict([('currency', currency),('instrument', instrument),('limit', limit),('since', since)])
         postData = json.dumps(data, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/trade/history', postData) 
+        # Convert the price and volume for each trade to 'normal' amounts
+        if response['trades']:
+            for trade in response['trades']:
+                conversion = {'price':trade['price']/CONVERSION,'volume':trade['volume']/CONVERSION,'fee':trade['fee']/CONVERSION}
+                trade.update(conversion)
         return response
 
     def order_history(self, instrument, currency, limit, since):
@@ -107,14 +114,23 @@ class Client:
         postData = json.dumps(orders, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/detail', postData) 
         return response
-"""
-    def order_create(self, instrument, currency, price, volume, side, order_type, client_request_id):
-        data = OrderedDict([('currency', currency),('instrument', instrument),
-            ('price', price),('volume', volume),('orderSide', side),('ordertype', order_type),
-            ('clientRequestId', client_request_id)])
+
+    def order_create(self, instrument, currency, price, volume, side, order_type):
+        #Conversion to fit the trade API requirements
+        price = price*CONVERSION
+        volume = volume*CONVERSION
+        data = OrderedDict([('currency', currency),('instrument', instrument),('price', price),('volume', volume),
+                            ('orderSide', side),('ordertype', order_type),('clientRequestId', 'btcmarketsapi')]) # client_request_id will be required once they update the API
         postData = json.dumps(data, separators=(',', ':'))
-        return post_request(self.key, self.secret, '/order/create', postData)
-"""
+        response = post_request(self.key, self.secret, '/order/create', postData)
+        return response
+
+    def order_cancel(self, order_ids):
+        orders = {'orderIds':order_ids} 
+        postData = json.dumps(orders, separators=(',', ':'))
+        response = post_request(self.key, self.secret, '/order/cancel', postData) 
+        return response
+
     
     
 
