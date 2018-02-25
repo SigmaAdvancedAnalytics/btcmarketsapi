@@ -48,10 +48,10 @@ def post_request(key, secret, path, postData):
     return request('post', key, signature, nowInMilisecond, path, postData)
 
 def convert_response(response_list, response_keys):
-    for element in response_list:
+    for item in response_list:
         for key in response_keys:
-            conversion = {key:element[key]/CONVERSION}
-            element.update(conversion)
+            conversion = {key:item[key]/CONVERSION}
+            item.update(conversion)
     return response_list
 
 class Client:
@@ -86,16 +86,15 @@ class Client:
 
     def account_trading_fee(self,instrument,currency):
         response = get_request(self.key, self.secret, '/account/{}/{}/tradingfee'.format(instrument.upper(),currency.upper()))
-        if response:     
-            response = {'instrument':instrument,'currency':currency,'tradingFeeRate':response['tradingFeeRate']/CONVERSION}
-        return response
+        print(type(response))
+        response = convert_response([response], ['tradingFeeRate', 'volume30Day'])
+        return response[0]
     
     # Order Data - https://github.com/BTCMarkets/API/wiki/Trading-API
     def trade_history(self, instrument, currency, limit, since):
         data = OrderedDict([('currency', currency.upper()),('instrument', instrument.upper()),('limit', limit),('since', since)])
         postData = json.dumps(data, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/trade/history', postData) 
-        # Convert the price and volume for each trade to 'normal' amounts
         response['trades'] = convert_response(response['trades'], ['price', 'volume','fee'])
         return response
 
@@ -103,18 +102,27 @@ class Client:
         data = OrderedDict([('currency', currency.upper()),('instrument', instrument.upper()),('limit', limit),('since', since)])
         postData = json.dumps(data, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/history', postData) 
+        response['orders'] = convert_response(response['orders'], ['price', 'openVolume','volume'])
+        for order in response['orders']:
+             order['trades'] = convert_response(order['trades'], ['price', 'volume','fee'])
         return response
 
     def open_orders(self, instrument, currency, limit, since):
         data = OrderedDict([('currency', currency.upper()),('instrument', instrument.upper()),('limit', limit),('since', since)])
         postData = json.dumps(data, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/open', postData) 
+        response['orders'] = convert_response(response['orders'], ['price', 'openVolume','volume'])
+        for order in response['orders']:
+             order['trades'] = convert_response(order['trades'], ['price', 'volume','fee'])
         return response
     
     def order_detail(self, order_ids):
         orders = {'orderIds':order_ids} 
         postData = json.dumps(orders, separators=(',', ':'))
         response = post_request(self.key, self.secret, '/order/detail', postData) 
+        response['orders'] = convert_response(response['orders'], ['price', 'openVolume','volume'])
+        for order in response['orders']:
+             order['trades'] = convert_response(order['trades'], ['price', 'volume','fee']) 
         return response
 
     def order_create(self, instrument, currency, price, volume, side, order_type):
