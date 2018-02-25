@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='btcmarketsapi',
-      version='0.9',
+      version='1.2',
       description='Python3 Wrapper for the BTCMarkets APIs',
       url='https://github.com/SigmaAdvancedAnalytics/btcmarketsapi',
       author='Joshua Barber',
