@@ -5,6 +5,5 @@ Python3 Wrapper for the BTCMarkets APIs
 > pip install btcmarketsapi
 
 ## Roadmap  
-1) Complete Trading API  
-2) Complete Fund transfer API  
-3) Add Websocket API  
+1) Complete Fund transfer API  
+2) Add Websocket API  
